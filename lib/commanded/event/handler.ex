@@ -904,7 +904,7 @@ defmodule Commanded.Event.Handler do
         handle_event_error(error, event, failure_context, state)
 
       {:error, reason, stacktrace} ->
-        log_event_error({:error, reason}, event, state)
+        log_event_error({:error, reason, stacktrace}, event, state)
         telemetry_exception(start_time, :error, reason, stacktrace, telemetry_metadata)
 
         failure_context = build_failure_context(event, context, stacktrace, state)
@@ -1046,6 +1046,18 @@ defmodule Commanded.Event.Handler do
         # Stop event handler with original error
         throw(error)
     end
+  end
+
+  defp log_event_error({:error, reason, stacktrace}, %RecordedEvent{} = failed_event, %Handler{} = state) do
+    Logger.error(fn ->
+      describe(state) <>
+        " failed to handle event " <>
+        inspect(failed_event, pretty: true) <>
+        " due to: " <>
+        inspect(reason, pretty: true) <>
+        " stacktrace: " <>
+        inspect(stacktrace, pretty: true)
+    end)
   end
 
   defp log_event_error({:error, reason}, %RecordedEvent{} = failed_event, %Handler{} = state) do
